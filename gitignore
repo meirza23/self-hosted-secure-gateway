@@ -1,0 +1,5 @@
+*.log
+*.bak
+*.key
+*.pem
+.DS_Store

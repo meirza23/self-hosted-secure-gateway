@@ -1,0 +1,48 @@
+# /etc/fail2ban/jail.local
+# jail.conf dosyasına dokunulmaz; paket güncellemelerinde üzerine yazılır.
+
+[DEFAULT]
+bantime  = 1h
+findtime = 10m
+maxretry = 3
+# Ubuntu 24.04 SSH loglarını journal'a yazıyor
+backend  = systemd
+# yerel ağ asla banlanmaz — kendini kilitleme riskine karşı
+ignoreip = 127.0.0.1/8 192.168.1.0/24
+
+[sshd]
+enabled = true
+
+# --- nginx jail'leri -------------------------------------------------
+# nginx logları journal'a değil dosyaya yazıyor; DEFAULT'taki systemd
+# backend'i burada çalışmaz, jail bazında polling gerekiyor.
+
+[nginx-http-auth]
+enabled  = true
+backend  = polling
+logpath  = /var/log/nginx/error.log
+
+[nginx-bad-request]
+enabled  = true
+backend  = polling
+logpath  = /var/log/nginx/access.log
+maxretry = 10
+
+[nginx-botsearch]
+enabled  = true
+backend  = polling
+logpath  = /var/log/nginx/error.log
+maxretry = 5
+
+# Özel filtre. Yerleşik botsearch jail'i error.log okuyor, ancak
+# "try_files ... =404" dahili bir dönüş üretiyor ve nginx bunu hata
+# olarak kaydetmiyor — tarama denemeleri yalnızca access.log'a düşüyor.
+# Eşik düşük ve ban uzun: statik bir sitede bu yolları arayan bir
+# isteğin meşru olma ihtimali yok.
+[nginx-noscript]
+enabled  = true
+backend  = polling
+logpath  = /var/log/nginx/access.log
+maxretry = 2
+bantime  = 24h
+findtime = 1h
